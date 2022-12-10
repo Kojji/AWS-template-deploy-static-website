@@ -8,6 +8,14 @@ Parameters:
     Default: test-bucket-name-hosted.host
 
 Resources:
+  # CodeCommit repository stack
+  CodeCommitRepoStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./codecommit-lambda.yaml
+      Parameters: 
+        RepoName: !Sub ${PageDomain}-repo
+    
   # Resource stack for CloudFront fronting S3 bucket with an index.html
   CloudFrontS3SiteStack:
     Type: AWS::CloudFormation::Stack
@@ -23,7 +31,7 @@ Outputs:
 
       
 
-
+# insert certificate arn into cloudfront
 # sam.cmd deploy --capabilities CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND --template template.yaml
 # script
 # s3 with host
