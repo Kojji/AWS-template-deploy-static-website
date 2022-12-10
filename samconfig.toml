@@ -2,9 +2,10 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "sam-app"
-s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-aezzj5tjqiwa"
-s3_prefix = "sam-app"
+stack_name = "test-app"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1l2m16cb26qgv"
+s3_prefix = "test-app"
 region = "us-east-1"
 capabilities = "CAPABILITY_NAMED_IAM"
 image_repositories = []
+parameter_overrides = "PageDomain=\"test-bucket-name-hosted.host\""
