@@ -8,75 +8,23 @@ Parameters:
     Default: test-bucket-name-hosted.host
 
 Resources:
-  # Static host s3 bucket
-  S3Bucket:
-    Type: AWS::S3::Bucket
-    Description: Bucket for builds
+  # Resource stack for CloudFront fronting S3 bucket with an index.html
+  CloudFrontS3SiteStack:
+    Type: AWS::CloudFormation::Stack
     Properties:
-      VersioningConfiguration:
-        Status: Enabled
-      BucketName: !Ref PageDomain
-      AccessControl: Private
-    DeletionPolicy: Retain
-  
-  # CloudFront distribution origin access identity to connece with S3 bucket
-  CloudFrontOriginAccessIdentity:
-    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
-    Properties:
-      CloudFrontOriginAccessIdentityConfig:
-        Comment: !Sub CloudFront OAI for ${PageDomain}
+      TemplateURL: ./s3-cloudfront-private-site.yaml
+      Parameters: 
+        PageDomain: !Ref PageDomain
 
-  # CloudFront Distribution
-  PublicDistribution:
-    Type: AWS::CloudFront::Distribution
-    Properties:
-      DistributionConfig:
-        Origins:
-          - DomainName: !GetAtt S3Bucket.DomainName
-            Id: S3-build-bucket
-            S3OriginConfig:
-              OriginAccessIdentity:
-                !Join ['', ['origin-access-identity/cloudfront/', !Ref CloudFrontOriginAccessIdentity]]
-        Enabled: true
-        HttpVersion: 'http2'
-        DefaultRootObject: 'index.html'
-        IPV6Enabled: true
-        Comment: CloudFront distribution
-        DefaultCacheBehavior:
-          DefaultTTL: 86400
-          MaxTTL: 31536000
-          TargetOriginId: !Sub 'S3-${AWS::StackName}-root'
-          # ResponseHeadersPolicyId: !Ref ResponseHeadersPolicy
-          AllowedMethods:
-            - GET
-            - HEAD
-          TargetOriginId: S3-build-bucket
-          ForwardedValues:
-            QueryString: true
-            Cookies:
-              Forward: none
-          ViewerProtocolPolicy: redirect-to-https
-        ViewerCertificate:
-          CloudFrontDefaultCertificate: 'true'
-        PriceClass: 'PriceClass_200'
+Outputs:
+  CloudFrontDomainName:
+    Description: Website address
+    Value: !GetAtt CloudFrontS3SiteStack.Outputs.PublicDistributionDomain
 
-  # Policy to enable public read
-  BucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref S3Bucket
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Action:
-              - s3:GetObject
-            Effect: Allow
-            Resource: 
-              !Sub
-                - ${bucketArn}/*
-                - bucketArn: !GetAtt S3Bucket.Arn
-            Principal:
-              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+      
+
+
+# sam.cmd deploy --capabilities CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND --template template.yaml
 # script
 # s3 with host
 # s3 fornted by cloudfront and certificate
