@@ -33,7 +33,7 @@ Outputs:
       
 
 # insert certificate arn into cloudfront
-# sam.cmd deploy --capabilities CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND --template template.yaml
+# sam.cmd deploy --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --template template.yaml
 # script
 # s3 with host
 # s3 fornted by cloudfront and certificate
