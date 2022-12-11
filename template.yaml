@@ -8,14 +8,6 @@ Parameters:
     Default: test-bucket-name-hosted.host
 
 Resources:
-  # CodeCommit repository stack
-  CodeCommitRepoStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: ./codecommit-lambda.yaml
-      Parameters: 
-        RepoName: !Sub ${PageDomain}-repo
-    
   # Resource stack for CloudFront fronting S3 bucket with an index.html
   CloudFrontS3SiteStack:
     Type: AWS::CloudFormation::Stack
@@ -23,6 +15,15 @@ Resources:
       TemplateURL: ./s3-cloudfront-private-site.yaml
       Parameters: 
         PageDomain: !Ref PageDomain
+
+  # CodeCommit repository stack
+  CodeCommitRepoStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./codecommit-lambda.yaml
+      Parameters: 
+        RepoName: !Sub ${PageDomain}-repo
+        S3BucketName: !GetAtt CloudFrontS3SiteStack.Outputs.S3PrivateBucketName
 
 Outputs:
   CloudFrontDomainName:

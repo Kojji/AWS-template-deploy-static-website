@@ -80,6 +80,9 @@ Outputs:
   S3PrivateBucketArn:
     Description: Website bucket locator
     Value: !GetAtt S3Bucket.Arn
+  S3PrivateBucketName:
+    Description: Website bucket name
+    Value: !GetAtt S3Bucket.DomainName
   PublicDistributionDomain:
     Description: CloudFront distribution
     Value: !GetAtt PublicDistribution.DomainName

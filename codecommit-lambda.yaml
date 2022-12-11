@@ -6,8 +6,30 @@ Parameters:
   RepoName:
     Description: Repository name
     Type: String
+  S3BucketName:
+    Description: Destination Bucket
+    Type: String
 
 Resources:
+  # copy files to bucket function
+  ReplicateFilesFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: functions/
+      Handler: ReplicateFiles.handler
+      Runtime: nodejs16.x
+      Timeout: 3
+      MemorySize: 128
+      Environment:
+        Variables:
+          DestinationBucketName: !Ref S3BucketName
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref S3BucketName
+        - CodeCommitReadPolicy:
+            RepositoryName: !GetAtt CodeCommitRepo.Name
+      
+
   # private CodeCommit repository
   CodeCommitRepo:
     Type: AWS::CodeCommit::Repository
