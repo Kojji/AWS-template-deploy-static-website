@@ -11,6 +11,65 @@ Parameters:
     Type: String
 
 Resources:
+  # private CodeCommit repository
+  CodeCommitRepo:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryName: !Ref RepoName
+      RepositoryDescription: This is a repository for the webApp build
+
+# Role for the event 
+  EventRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: IAM role to allow Amazon CloudWatch Events to trigger AWS CodeBuild build
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - events.amazonaws.com
+          Sid: 1
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref S3BucketName
+        - CodeCommitReadPolicy:
+            RepositoryName: !GetAtt CodeCommitRepo.Name
+      RoleName: !Join
+        - '-'
+        - - !Ref 'AWS::StackName'
+          - CloudWatchEventRule
+
+  # Event that triggers the CodeBuild when the content of a CodeCommit repository is modified 
+  # EventRule:
+  #   Type: AWS::Events::Rule
+  #   Properties:
+  #     Description: EventRule
+  #     EventPattern:
+  #       source:
+  #       - aws.codecommit
+  #       detail-type:
+  #       - CodeCommit Repository State Change
+  #       detail:
+  #         event:
+  #         - referenceUpdated
+  #     State: "ENABLED"
+  #     Targets:
+  #       - Arn: !GetAtt ReplicateFilesFunction.Arn
+  #         Id: CodeCommit2S3
+  #         RoleArn: !GetAtt EventRole.Arn
+  #         InputTransformer:
+  #           InputPathsMap: 
+  #             "referenceType": "$.detail.referenceType"
+  #             "region": "$.region"
+  #             "repositoryName": "$.detail.repositoryName"
+  #             "account": "$.account"
+  #             "referenceName": "$.detail.referenceName"
+  #           InputTemplate: |
+  #             {"environmentVariablesOverride": [{"name": "REFERENCE_NAME","value": <referenceName>},{"name": "REFERENCE_TYPE","value": <referenceType>},{"name": "REPOSITORY_NAME","value": <repositoryName>},{"name": "REPO_REGION","value": <region>},{"name": "ACCOUNT_ID","value": <account>}]}
+
+
   # copy files to bucket function
   ReplicateFilesFunction:
     Type: AWS::Serverless::Function 
@@ -28,12 +87,9 @@ Resources:
             BucketName: !Ref S3BucketName
         - CodeCommitReadPolicy:
             RepositoryName: !GetAtt CodeCommitRepo.Name
+      # Events:
+      #   - 
       
 
-  # private CodeCommit repository
-  CodeCommitRepo:
-    Type: AWS::CodeCommit::Repository
-    Properties:
-      RepositoryName: !Ref RepoName
-      RepositoryDescription: This is a repository for the webApp build
+  
 
