@@ -15,6 +15,7 @@ def handler(event, context):
         commands:
           - git clone -b $REFERENCE_NAME codecommit::$REPO_REGION://$REPOSITORY_NAME
           - rm -r $REPOSITORY_NAME/.git
+          - aws s3 rm s3://$BUCKET --recursive
           - aws s3 cp --recursive $REPOSITORY_NAME s3://$BUCKET/
   """
 
