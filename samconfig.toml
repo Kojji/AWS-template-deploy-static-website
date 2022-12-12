@@ -2,9 +2,9 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "test-app"
+stack_name = "dev-port-app"
 s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1l2m16cb26qgv"
-s3_prefix = "test-app"
+s3_prefix = "dev-port-app"
 region = "us-east-1"
 capabilities = "CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
 image_repositories = []

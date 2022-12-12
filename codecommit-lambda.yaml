@@ -18,37 +18,6 @@ Resources:
       RepositoryName: !Ref RepoName
       RepositoryDescription: This is a repository for the webApp build
 
-
-
-  # Event that triggers the CodeBuild when the content of a CodeCommit repository is modified 
-  # EventRule:
-  #   Type: AWS::Events::Rule
-  #   Properties:
-  #     Description: EventRule
-  #     EventPattern:
-  #       source:
-  #       - aws.codecommit
-  #       detail-type:
-  #       - CodeCommit Repository State Change
-  #       detail:
-  #         event:
-  #         - referenceUpdated
-  #     State: "ENABLED"
-  #     Targets:
-  #       - Arn: !GetAtt ReplicateFilesFunction.Arn
-  #         Id: CodeCommit2S3
-  #         RoleArn: !GetAtt EventRole.Arn
-  #         InputTransformer:
-  #           InputPathsMap: 
-  #             "referenceType": "$.detail.referenceType"
-  #             "region": "$.region"
-  #             "repositoryName": "$.detail.repositoryName"
-  #             "account": "$.account"
-  #             "referenceName": "$.detail.referenceName"
-  #           InputTemplate: |
-  #             {"environmentVariablesOverride": [{"name": "REFERENCE_NAME","value": <referenceName>},{"name": "REFERENCE_TYPE","value": <referenceType>},{"name": "REPOSITORY_NAME","value": <repositoryName>},{"name": "REPO_REGION","value": <region>},{"name": "ACCOUNT_ID","value": <account>}]}
-
-
   # copy files to bucket function
   ReplicateFilesFunction:
     Type: AWS::Serverless::Function 
@@ -66,8 +35,16 @@ Resources:
             BucketName: !Ref S3BucketName
         - CodeCommitReadPolicy:
             RepositoryName: !GetAtt CodeCommitRepo.Name
-      # Events:
-      #   - 
+      Events:
+        CodeCommitEvent: 
+          Type: CloudWatchEvent
+          Properties:
+            Target:
+              Id: !Ref LambdaRule
+            Pattern:
+              detail:
+                event:
+                  - referenceUpdated
 
   # Role for the event
   LambdaRole:
@@ -82,7 +59,7 @@ Resources:
                     - events.amazonaws.com
               Action:
                 - sts:AssumeRole
-      Description: !Sub "IAM Role for ${AWS::StackName}"
+      Description: !Sub IAM Role for ${AWS::StackName}
       Path: '/'
       Policies:
         - PolicyName: root
@@ -94,5 +71,17 @@ Resources:
                 Effect: Allow
                 Resource: !GetAtt ReplicateFilesFunction.Arn
 
-  
-
+  # Event that triggers the Lambda when the content of a CodeCommit repository is modified 
+  LambdaRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.codecommit
+        detail-type:
+          - CodeCommit Repository State Change
+        detail:
+          event:
+            - referenceUpdated
+      State: ENABLED
+      RoleArn: !GetAtt LambdaRole.Arn
