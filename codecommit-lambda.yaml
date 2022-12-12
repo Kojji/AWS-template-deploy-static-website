@@ -9,6 +9,10 @@ Parameters:
   S3BucketName:
     Description: Destination Bucket
     Type: String
+  CoveredBranch:
+    Description: Branch which will be replicated on updated
+    Type: String
+    Default: master
 
 Resources:
   # private CodeCommit repository
@@ -30,6 +34,8 @@ Resources:
       Environment:
         Variables:
           DestinationBucketName: !Ref S3BucketName
+          CoveredBranch: !Ref CoveredBranch
+          CloneRepoUrl: !GetAtt CodeCommitRepo.CloneUrlHttp
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref S3BucketName

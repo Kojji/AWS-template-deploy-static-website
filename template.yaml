@@ -24,6 +24,7 @@ Resources:
       Parameters: 
         RepoName: !Sub ${PageDomain}-repo
         S3BucketName: !GetAtt CloudFrontS3SiteStack.Outputs.S3PrivateBucketName
+        CoveredBranch: master
 
 Outputs:
   CloudFrontDomainName:

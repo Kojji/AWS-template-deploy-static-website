@@ -2,10 +2,10 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "dev-port-app"
+stack_name = "portfolio-deploy"
 s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1l2m16cb26qgv"
-s3_prefix = "dev-port-app"
+s3_prefix = "portfolio-deploy"
 region = "us-east-1"
 capabilities = "CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
 image_repositories = []
-parameter_overrides = "PageDomain=\"test-bucket-name-hosted.host\""
+parameter_overrides = "PageDomain=\"portfolio-fernandokoji.dev\""
