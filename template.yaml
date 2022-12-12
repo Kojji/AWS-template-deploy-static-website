@@ -15,6 +15,15 @@ Resources:
       RepositoryName: !Sub ${PageDomain}-repo
       RepositoryDescription: This is a repository for the webApp build
 
+  # private s3 bucket
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Description: Bucket for the builds
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      AccessControl: Private
+
   # Bucket that will store the CodeCommit backups
   CodeCommitBackupBucket:
     Type: 'AWS::S3::Bucket'
@@ -69,7 +78,7 @@ Resources:
         Image: aws/codebuild/standard:4.0
         EnvironmentVariables:
           - Name: BUCKET
-            Value: !Ref CodeCommitBackupBucket
+            Value: !Ref S3Bucket
             Type: PLAINTEXT
           - Name: ACCOUNT
             Value: !Sub ${AWS::AccountId}
@@ -171,6 +180,65 @@ Resources:
               "referenceName": "$.detail.referenceName"
             InputTemplate: |
               {"environmentVariablesOverride": [{"name": "REFERENCE_NAME","value": <referenceName>},{"name": "REFERENCE_TYPE","value": <referenceType>},{"name": "REPOSITORY_NAME","value": <repositoryName>},{"name": "REPO_REGION","value": <region>},{"name": "ACCOUNT_ID","value": <account>}]}
+
+# CloudFront distribution origin access identity to connece with S3 bucket
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: CloudFront OAI for s3
+
+  # CloudFront Distribution
+  PublicDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: !GetAtt S3Bucket.DomainName
+            Id: S3-build-bucket
+            S3OriginConfig:
+              OriginAccessIdentity:
+                !Join ['', ['origin-access-identity/cloudfront/', !Ref CloudFrontOriginAccessIdentity]]
+        Enabled: true
+        HttpVersion: 'http2'
+        DefaultRootObject: 'index.html'
+        IPV6Enabled: true
+        Comment: CloudFront distribution
+        DefaultCacheBehavior:
+          DefaultTTL: 86400
+          MaxTTL: 31536000
+          TargetOriginId: !Sub 'S3-${AWS::StackName}-root'
+          AllowedMethods:
+            - GET
+            - HEAD
+          TargetOriginId: S3-build-bucket
+          ForwardedValues:
+            QueryString: true
+            Cookies:
+              Forward: none
+          ViewerProtocolPolicy: redirect-to-https
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: 'true'
+        PriceClass: 'PriceClass_200'
+
+  # Policy to enable public read
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - s3:GetObject
+            Effect: Allow
+            Resource: 
+              !Sub
+                - ${bucketArn}/*
+                - bucketArn: !GetAtt S3Bucket.Arn
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
 
 Outputs:
   CodeCommitBackupBucket:

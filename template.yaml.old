@@ -26,6 +26,14 @@ Resources:
         S3BucketName: !GetAtt CloudFrontS3SiteStack.Outputs.S3PrivateBucketName
         CoveredBranch: master
 
+  # # Custom resource to trigger the Lambda function at deployment time
+  # TriggerBuildspecCreation:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   DependsOn: CreateBuildspec
+  #   Version: "1.0"
+  #   Properties:
+  #     ServiceToken: !GetAtt CreateBuildspec.Arn
+
 Outputs:
   CloudFrontDomainName:
     Description: Website address
