@@ -2,12 +2,17 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: Serverless patterns - Backup CodeCommit to S3 using EventBridge and CodeBuild
 
+Parameters:
+  PageDomain:
+    Type: String
+    Default: test-bucket-name-hosted.host
+
 Resources:
   # private CodeCommit repository
   CodeCommitRepo:
     Type: AWS::CodeCommit::Repository
     Properties:
-      RepositoryName: !Ref RepoName
+      RepositoryName: !Sub ${PageDomain}-repo
       RepositoryDescription: This is a repository for the webApp build
 
   # Bucket that will store the CodeCommit backups
@@ -185,11 +190,12 @@ Resources:
       EventPattern:
         source:
         - aws.codecommit
+        resources:
+        - !GetAtt CodeCommitRepo.Arn
         detail-type:
         - CodeCommit Repository State Change
         detail:
           event:
-          - referenceCreated
           - referenceUpdated
       State: "ENABLED"
       Targets:
