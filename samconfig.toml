@@ -2,9 +2,9 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "portfolio-deploy"
+stack_name = "from-backup-template"
 s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1l2m16cb26qgv"
-s3_prefix = "portfolio-deploy"
+s3_prefix = "from-backup-template"
 region = "us-east-1"
 capabilities = "CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
 image_repositories = []
