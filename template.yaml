@@ -5,7 +5,7 @@ Description: Serverless patterns - Backup CodeCommit to S3 using EventBridge and
 Parameters:
   PageDomain:
     Type: String
-    Default: test-bucket-name-hosted.host
+    Default: your-domain.host
 
 Resources:
   # private CodeCommit repository
@@ -13,7 +13,7 @@ Resources:
     Type: AWS::CodeCommit::Repository
     Properties:
       RepositoryName: !Sub ${PageDomain}-repo
-      RepositoryDescription: This is a repository for the webApp build
+      RepositoryDescription: This is a repository for the website build
 
   # private s3 bucket
   S3Bucket:
@@ -24,21 +24,22 @@ Resources:
         Status: Enabled
       AccessControl: Private
 
-  # Bucket that will store the CodeCommit backups
-  CodeCommitBackupBucket:
+  # Bucket that will store the buildspec for codebuild
+  BuildSpecBucket:
     Type: 'AWS::S3::Bucket'
-    Description: Bucket to store CodeCommit code
+    Description: Bucket to store the buildspec to be used by CodeBuild
     Properties:
       OwnershipControls:
         Rules:
           - ObjectOwnership: BucketOwnerEnforced
+      AccessControl: Private
 
   # Role with permisions for the CodeBuild project
   CodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
+        Version: '2012-10-17'
         Statement:
             - Effect: Allow
               Principal:
@@ -61,14 +62,15 @@ Resources:
                   - s3:Get*
                   - s3:List*
                   - s3:PutObject
+                  - s3:DeleteObject
                 Effect: Allow
                 Resource: '*'
 
-  # Project that clones the CodeCommit repository, compress the files in a .zip and uploads to S3              
+  # Project that clones the CodeCommit repository and uploads to S3              
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Description: CodeBuild project to sync CodeCommit repositories to S3 on backup account
+      Description: CodeBuild project to sync CodeCommit repository to S3
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Artifacts:
         Type: NO_ARTIFACTS
@@ -86,21 +88,59 @@ Resources:
       Source:
         Location: !Join
           - ''
-          - - !Ref CodeCommitBackupBucket
+          - - !Ref BuildSpecBucket
             - '/codebuild-source/'
         Type: S3
       TimeoutInMinutes: 10
 
-  # Lambda function to create the buildspec.yml in the CodeCommitBackupBucket 
+  # Lambda function to create the buildspec.yml in the BuildSpecBucket at template deployment time
   CreateBuildspec:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions/
       Handler: index.handler
+      InlineCode: |
+        import boto3
+        import os
+        import cfnresponse
+
+        def handler(event, context):
+          filename = "buildspec.yml"
+          # buildspec.yml code inside the string
+          string = """
+            version: 0.2
+            phases:
+              install:
+                commands:
+                  - pip install git-remote-codecommit
+              build:
+                commands:
+                  - git clone -b $REFERENCE_NAME codecommit::$REPO_REGION://$REPOSITORY_NAME
+                  - rm -r $REPOSITORY_NAME/.git
+                  - aws s3 rm s3://$BUCKET --recursive
+                  - aws s3 cp --recursive $REPOSITORY_NAME s3://$BUCKET/
+          """
+
+          encoded_string = string.encode("utf-8")
+          bucket_name = os.environ['bucket']
+          s3_path = "codebuild-source/" + filename
+          s3 = boto3.resource("s3")
+          responseData = {}
+          try:
+            print("Creating buildspec file")
+            s3.Bucket(bucket_name).put_object(Key=s3_path, Body=encoded_string)
+            print("File created")
+            responseData['Data'] = "File created"
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData)
+          except Exception as e:
+            print("There was an error creating the file")
+            log_exception()
+            responseData['Data'] = e
+            cfnresponse.send(event, context, cfnresponse.FAILED, responseData)
+          return
       Runtime: python3.9
       Environment:
         Variables:
-          bucket: !Ref CodeCommitBackupBucket
+          bucket: !Ref BuildSpecBucket
       Policies:
         - AWSLambdaExecute
         - Version: '2012-10-17' 
@@ -111,10 +151,10 @@ Resources:
               Resource: !Join                                                                                       
                 - ''
                 - - 'arn:aws:s3:::'
-                  - !Ref CodeCommitBackupBucket
+                  - !Ref BuildSpecBucket
                   - '/*'
 
-  # Custom resource to trigger the Lambda function at deployment time
+  # Custom resource to trigger the Lambda function at template deployment time
   TriggerBuildspecCreation:
     Type: AWS::CloudFormation::CustomResource
     DependsOn: CreateBuildspec
@@ -122,9 +162,9 @@ Resources:
     Properties:
       ServiceToken: !GetAtt CreateBuildspec.Arn
 
-  # Role for the event 
+  # Role for the cloudwarch event
   EventRole:
-    Description: IAM role to allow Amazon CloudWatch Events to trigger AWS CodeBuild build
+    Description: IAM role to allow Amazon CloudWatch Events to trigger AWS CodeBuild start build
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -151,7 +191,7 @@ Resources:
           - CloudWatchEventRule
     Type: AWS::IAM::Role
 
-  # Event that triggers the CodeBuild when the content of a CodeCommit repository is modified 
+  # Cloudwatch event that triggers the CodeBuild when the content of the CodeCommit repository is modified 
   EventRule:
     Type: "AWS::Events::Rule"
     Properties:
@@ -181,7 +221,7 @@ Resources:
             InputTemplate: |
               {"environmentVariablesOverride": [{"name": "REFERENCE_NAME","value": <referenceName>},{"name": "REFERENCE_TYPE","value": <referenceType>},{"name": "REPOSITORY_NAME","value": <repositoryName>},{"name": "REPO_REGION","value": <region>},{"name": "ACCOUNT_ID","value": <account>}]}
 
-# CloudFront distribution origin access identity to connece with S3 bucket
+# CloudFront distribution origin access identity to connect with S3 bucket
   CloudFrontOriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
@@ -227,7 +267,7 @@ Resources:
     Properties:
       Bucket: !Ref S3Bucket
       PolicyDocument:
-        Version: 2012-10-17
+        Version: '2012-10-17'
         Statement:
           - Action:
               - s3:GetObject
@@ -239,9 +279,16 @@ Resources:
             Principal:
               CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
 
-
 Outputs:
-  CodeCommitBackupBucket:
-    Description: "Bucket to store the CodeCommit backup files"
+  S3Bucket:
+    Description: "Bucket where the build is stored"
     Value:
-      Ref: CodeCommitBackupBucket              
+      Ref: S3Bucket
+  PublicDistribution:
+    Description: "CloudFront distribution"
+    Value:
+      Ref: PublicDistribution
+  CodeCommitRepo:
+    Description: "CodeCommit repository"
+    Value:
+      Ref: CodeCommitRepo
