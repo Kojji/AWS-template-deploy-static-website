@@ -1,10 +1,8 @@
-# AWS CodeCommit to S3
+# AWS CodeCommit replication to S3 website hosting
 
-This pattern implements the solution outlined on the ["Automate event-driven backups from CodeCommit to Amazon S3 using CodeBuild and CloudWatch Events" Presciptive Guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/automate-event-driven-backups-from-codecommit-to-amazon-s3-using-codebuild-and-cloudwatch-events.html#automate-event-driven-backups-from-codecommit-to-amazon-s3-using-codebuild-and-cloudwatch-events-tools). 
+This pattern implements the solution outlined on my Medium article ["Creating an AWS template to deploy my online Portfolio Pt.1"]().
 
-Learn more about this pattern at Serverless Land Patterns: https://serverlessland.com/patterns/codecommit-s3.
-
-Important: this application uses various AWS services and there are costs associated with these services after the Free Tier usage - please see the [AWS Pricing page](https://aws.amazon.com/pricing/) for details. You are responsible for any AWS costs incurred. No warranty is implied in this example.
+Important: this application uses a variety of AWS resources and there may be costs associated with these services after the Free Tier usage - please see the [AWS Pricing page](https://aws.amazon.com/pricing/) for details. You are responsible for any AWS costs incurred. No warranty is implied in the use of this template.
 
 ## Requirements
 
@@ -15,7 +13,7 @@ Important: this application uses various AWS services and there are costs associ
 
 ## Deployment Instructions
 
-1. Create a new directory, navigate to that directory in a terminal and clone the GitHub repository:
+1. Create a new directory, navigate to that directory in a terminal and clone this GitHub repository:
     ``` 
     git clone https://github.com/aws-samples/serverless-patterns
     ```
@@ -25,40 +23,29 @@ Important: this application uses various AWS services and there are costs associ
     ```
 1. From the command line, use AWS SAM to deploy the AWS resources for the pattern as specified in the template.yml file:
     ```
-    sam deploy --guided  --capabilities CAPABILITY_NAMED_IAM
+    sam deploy --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --template template.yaml
     ```
 1. During the prompts:
     * Enter a stack name
     * Enter the desired AWS Region
+    * Enter the page domain (it just impacts on some of the resources naming)
     * Allow SAM CLI to create IAM roles with the required permissions.
 
     Once you have run `sam deploy --guided` mode once and saved arguments to a configuration file (samconfig.toml), you can use `sam deploy` in future to use these defaults.
 
-1. Note the outputs from the SAM deployment process. These contain the resource names and/or ARNs which are used for testing.
+1. Note the outputs from the SAM deployment process. These contain information S3 bucket where your build will be stored, the CodeCommit repository which the builds will be pushed into and the cloudfront distribution that delivers the bucket content.
+
+2. For this template, to use a custom domain, you have to manually acquire the domain and create a certificate on "AWS Certificate Manager" and link it to the generated Cloudfront Distribution. 
 
 ## How it works
 
-When the content of a CodeCommit repository is modified (for example, by a git push command), it notifies EventBridge of the repository change. EventBridge then invokes AWS CodeBuild with the CodeCommit repository information. CodeBuild clones the entire CodeCommit repository, packages it into a .zip file and uploads the it to an S3 bucket.
-During deployment, the pattern uses a Lambda function and a CloudFormation Custom Resource to create the CodeBuild's buildspec.yml template.
+When the content of the CodeCommit repository is modified (for example, by a git push command), it notifies EventBridge of the repository change. EventBridge then invokes AWS CodeBuild with the CodeCommit repository information. CodeBuild cleans the bucket and then clones the entire CodeCommit repository and uploads the it to an S3 bucket which is fronted by a CloudFront distribution.
+During deployment, the pattern uses a Lambda function and a CloudFormation Custom Resource to create the CodeBuild's buildspec.yml template and stores into a secondary bucket.
 
 ## Testing
 
-1. Create or use a pre-existing CodeCommit repository
-1. Update the repository content
-1. Verify that the zip file is created on the backup bucket, under the folder `repositories`
+1. Use the CodeCommit repository created by this template
+2. Update the repository content
+3. Verify that the files are replicated on the S3 bucket that hosts the page
 
-
-## Cleanup
- 
-1. Delete the stack
-    ```bash
-    aws cloudformation delete-stack --stack-name STACK_NAME
-    ```
-1. Confirm the stack has been deleted
-    ```bash
-    aws cloudformation list-stacks --query "StackSummaries[?contains(StackName,'STACK_NAME')].StackStatus"
-    ```
-----
-Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-
-SPDX-License-Identifier: MIT-0
+Important: For the scope of this project, there isn't a conditional control over which branch will be replicated. So, for any branch of the repository that is updated it's contents will replace the old files inside the S3 bucket for the builds.
