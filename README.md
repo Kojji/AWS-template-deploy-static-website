@@ -15,11 +15,11 @@ Important: this application uses a variety of AWS resources and there may be cos
 
 1. Create a new directory, navigate to that directory in a terminal and clone this GitHub repository:
     ``` 
-    git clone https://github.com/aws-samples/serverless-patterns
+    git clone https://github.com/Kojji/AWS-template-deploy-static-website
     ```
 1. Change directory to the pattern directory:
     ```
-    cd codecommit-s3
+    cd AWS-template-deploy-static-website
     ```
 1. From the command line, use AWS SAM to deploy the AWS resources for the pattern as specified in the template.yml file:
     ```
