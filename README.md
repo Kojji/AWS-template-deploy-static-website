@@ -1,6 +1,6 @@
 # AWS CodeCommit replication to S3 website hosting
 
-This pattern implements the solution outlined on my Medium article ["Creating an AWS template to deploy my online Portfolio Pt.1"]().
+This pattern implements the solution outlined on my Medium article ["Creating an AWS template to deploy my online Portfolio Pt.1"](https://medium.com/@fernandokojidev/deploying-my-portfolio-on-aws-78f96767e04e).
 
 Important: this application uses a variety of AWS resources and there may be costs associated with these services after the Free Tier usage - please see the [AWS Pricing page](https://aws.amazon.com/pricing/) for details. You are responsible for any AWS costs incurred. No warranty is implied in the use of this template.
 
