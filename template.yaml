@@ -162,7 +162,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt CreateBuildspec.Arn
 
-  # Role for the cloudwarch event
+  # Role for the cloudwatch event
   EventRole:
     Description: IAM role to allow Amazon CloudWatch Events to trigger AWS CodeBuild start build
     Properties:
@@ -261,7 +261,7 @@ Resources:
           CloudFrontDefaultCertificate: 'true'
         PriceClass: 'PriceClass_200'
 
-  # Policy to enable public read
+  # Policy to enable access by OAI
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
