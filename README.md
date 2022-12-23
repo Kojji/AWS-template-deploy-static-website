@@ -33,9 +33,9 @@ Important: this application uses a variety of AWS resources and there may be cos
 
     Once you have run `sam deploy --guided` mode once and saved arguments to a configuration file (samconfig.toml), you can use `sam deploy` in future to use these defaults.
 
-1. Note the outputs from the SAM deployment process. These contain information S3 bucket where your build will be stored, the CodeCommit repository which the builds will be pushed into and the cloudfront distribution that delivers the bucket content.
+5. Note the outputs from the SAM deployment process. These contain information S3 bucket where your build will be stored, the CodeCommit repository which the builds will be pushed into and the cloudfront distribution that delivers the bucket content.
 
-2. For this template, to use a custom domain, you have to manually acquire the domain and create a certificate on "AWS Certificate Manager" and link it to the generated Cloudfront Distribution. 
+6. For this template, to use a custom domain, you have to manually acquire the domain and create a certificate on "AWS Certificate Manager" and link it to the generated Cloudfront Distribution. 
 
 ## How it works
 
