@@ -17,15 +17,15 @@ Important: this application uses a variety of AWS resources and there may be cos
     ``` 
     git clone https://github.com/Kojji/AWS-template-deploy-static-website
     ```
-1. Change directory to the pattern directory:
+2. Change directory to the pattern directory:
     ```
     cd AWS-template-deploy-static-website
     ```
-1. From the command line, use AWS SAM to deploy the AWS resources for the pattern as specified in the template.yml file:
+3. From the command line, use AWS SAM to deploy the AWS resources for the pattern as specified in the template.yml file:
     ```
     sam deploy --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --template template.yaml
     ```
-1. During the prompts:
+4. During the prompts:
     * Enter a stack name
     * Enter the desired AWS Region
     * Enter the page domain (it just impacts on some of the resources naming)
